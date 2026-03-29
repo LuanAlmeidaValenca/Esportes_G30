@@ -1,6 +1,5 @@
 import libsql
 import json
-import os
 import streamlit as st
 
 # O Streamlit vai ler essas variaveis da nuvem (ou do arquivo secrets.toml localmente)
@@ -11,15 +10,10 @@ except KeyError:
     st.error("Credenciais do Turso nao encontradas. Configure o st.secrets!")
     st.stop()
 
-DB_PATH = "data/database.db"
-
 def get_connection():
-    """Conecta na replica local e puxa os dados mais recentes da nuvem."""
-    if not os.path.exists("data"):
-        os.makedirs("data")
-        
-    conn = libsql.connect(DB_PATH, sync_url=TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
-    conn.sync() # Sincroniza (puxa as alteracoes feitas por outros usuarios)
+    """Conecta diretamente ao banco de dados na nuvem (Remoto)."""
+    # Conecta direto na URL, ignorando arquivos locais
+    conn = libsql.connect(database=TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
     return conn
 
 def init_db():
@@ -54,7 +48,6 @@ def init_db():
     ''')
 
     conn.commit()
-    conn.sync() # Envia a criacao das tabelas para a nuvem
     conn.close()
 
 # --- FUNCOES PARA JOGADORES ---
@@ -65,7 +58,6 @@ def add_player(name):
     try:
         cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
         conn.commit()
-        conn.sync() 
         return True
     except Exception:
         return False
@@ -86,7 +78,6 @@ def delete_player(player_id):
     cursor.execute("DELETE FROM players WHERE id = ?", (player_id,))
     cursor.execute("DELETE FROM evaluations WHERE player_id = ?", (player_id,))
     conn.commit()
-    conn.sync()
     conn.close()
 
 # --- FUNCOES PARA ESPORTES ---
@@ -98,7 +89,6 @@ def add_sport(name, attributes_list):
     try:
         cursor.execute("INSERT INTO sports (name, attributes) VALUES (?, ?)", (name, attributes_str))
         conn.commit()
-        conn.sync()
         return True
     except Exception:
         return False
@@ -119,7 +109,6 @@ def delete_sport(sport_id):
     cursor.execute("DELETE FROM sports WHERE id = ?", (sport_id,))
     cursor.execute("DELETE FROM evaluations WHERE sport_id = ?", (sport_id,))
     conn.commit()
-    conn.sync()
     conn.close()
 
 # --- FUNCOES PARA AVALIACOES ---
@@ -133,7 +122,6 @@ def add_evaluation(date, player_id, sport_id, scores_dict):
         (date, player_id, sport_id, scores_json)
     )
     conn.commit()
-    conn.sync()
     conn.close()
 
 def get_evaluations(sport_id=None, player_id=None):
@@ -169,7 +157,6 @@ def update_evaluation(evaluation_id, scores_dict):
     scores_json = json.dumps(scores_dict)
     cursor.execute("UPDATE evaluations SET scores = ? WHERE id = ?", (scores_json, evaluation_id))
     conn.commit()
-    conn.sync()
     conn.close()
 
 def delete_evaluation(evaluation_id):
@@ -177,5 +164,4 @@ def delete_evaluation(evaluation_id):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM evaluations WHERE id = ?", (evaluation_id,))
     conn.commit()
-    conn.sync()
     conn.close()
