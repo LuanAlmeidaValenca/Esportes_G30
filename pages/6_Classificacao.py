@@ -67,7 +67,7 @@ for player, stats in player_recent_stats.items():
     period_avg = stats["total_score"] / stats["matches"]
     leaderboard.append({
         "Jogador": player,
-        "Dias": stats["matches"], # Mudou de "Partidas (30d)" para "Dias"
+        "Partidas (30d)": stats["matches"],
         "Nota Media (30d)": round(period_avg, 2)
     })
 
@@ -78,8 +78,7 @@ for index, item in enumerate(leaderboard_sorted):
     item["Posicao"] = index + 1
 
 df = pd.DataFrame(leaderboard_sorted)
-# Atualizamos também a ordem das colunas para refletir o novo nome
-df = df[["Posicao", "Jogador", "Nota Media (30d)", "Dias"]]
+df = df[["Posicao", "Jogador", "Nota Media (30d)", "Partidas (30d)"]]
 
 st.subheader(f"Ranking - {selected_sport_name}")
 st.dataframe(

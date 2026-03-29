@@ -17,7 +17,7 @@ if not sports:
     st.stop()
 
 sport_dict = {s[1]: {"id": s[0], "attributes": s[2]} for s in sports}
-selected_sport_name = st.selectbox("1. Filtrar por Esporte", list(sport_dict.keys()), label_visibility="collapsed")
+selected_sport_name = st.selectbox("1. Filtrar por Esporte", list(sport_dict.keys()))
 
 sport_info = sport_dict[selected_sport_name]
 sport_id = sport_info["id"]
@@ -77,7 +77,7 @@ with col_filtros2:
     
     # Pega todos os jogadores que jogaram esse esporte para o filtro
     all_players = list(set([e[2] for e in evaluations]))
-    selected_players = st.multiselect("Selecione os Jogadores:", all_players, default=..., label_visibility="collapsed")
+    selected_players = st.multiselect("Selecione os Jogadores:", all_players, default=all_players[:2] if len(all_players) >= 2 else all_players)
     
     selected_attributes = st.multiselect("Selecione os Atributos:", all_attributes, default=all_attributes)
 

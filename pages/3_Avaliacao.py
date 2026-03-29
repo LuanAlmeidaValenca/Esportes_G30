@@ -23,8 +23,8 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.subheader("Dados da Partida")
     selected_date = st.date_input("Data do Jogo", datetime.date.today())
-    selected_player_name = st.selectbox("Jogador", list(player_dict.keys()), label_visibility="collapsed")
-    selected_sport_name = st.selectbox("Esporte", list(sport_dict.keys()), label_visibility="collapsed")
+    selected_player_name = st.selectbox("Jogador", list(player_dict.keys()))
+    selected_sport_name = st.selectbox("Esporte", list(sport_dict.keys()))
 
 with col2:
     st.subheader("Notas por Atributo")
