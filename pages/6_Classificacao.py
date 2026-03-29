@@ -7,86 +7,93 @@ import utils.db_manager as db
 st.set_page_config(page_title="Classificacao", layout="wide")
 
 st.title("Tabela de Classificacao")
-st.markdown("Ranking baseado na media de desempenho dos ultimos 30 dias.")
+st.markdown("Veja quem sao os jogadores em melhor forma nos ultimos 30 dias e a sua evolucao.")
 
 sports = db.get_sports()
 if not sports:
-    st.warning("Nenhum esporte cadastrado.")
+    st.warning("Cadastre um esporte primeiro.")
     st.stop()
 
-sport_dict = {s[1]: {"id": s[0], "attributes": s[2]} for s in sports}
-selected_sport_name = st.selectbox("Selecione o Esporte", list(sport_dict.keys()))
-
-sport_info = sport_dict[selected_sport_name]
-sport_id = sport_info["id"]
+sport_dict = {s[1]: s[0] for s in sports}
+selected_sport_name = st.selectbox("Selecione o Esporte", list(sport_dict.keys()), label_visibility="collapsed")
+sport_id = sport_dict[selected_sport_name]
 
 evaluations = db.get_evaluations(sport_id=sport_id)
 
 if not evaluations:
-    st.info(f"Faltam dados para gerar a classificacao de {selected_sport_name}.")
+    st.info(f"Nenhuma partida registrada para {selected_sport_name} ainda.")
     st.stop()
 
-# Definir a janela de tempo (Ultimos 30 dias)
 hoje = datetime.date.today()
-limite_30_dias = hoje - datetime.timedelta(days=30)
-limite_str = limite_30_dias.strftime("%Y-%m-%d")
+player_stats = {}
 
-st.markdown(f"*Considerando partidas entre **{limite_30_dias.strftime('%d/%m/%Y')}** e **{hoje.strftime('%d/%m/%Y')}**.*")
-
-# Dicionario para acumular as notas dos ultimos 30 dias
-player_recent_stats = {}
-
+# Agrupa as notas do periodo atual (0-30 dias) e anterior (31-60 dias)
 for eval_data in evaluations:
-    eval_id, date, player_name, sport_name, scores_json, p_id, s_id = eval_data
+    eval_id, date_str, player_name, s_name, scores_json, p_id, s_id = eval_data
+    date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    days_diff = (hoje - date_obj).days
     
-    # Filtra apenas os jogos que ocorreram nos ultimos 30 dias
-    if date >= limite_str:
-        scores_dict = json.loads(scores_json)
+    scores_dict = json.loads(scores_json)
+    match_avg = sum(scores_dict.values()) / len(scores_dict) if scores_dict else 0
+    
+    if player_name not in player_stats:
+        player_stats[player_name] = {"current_sum": 0, "current_matches": 0, "prev_sum": 0, "prev_matches": 0}
         
-        if scores_dict:
-            match_avg = sum(scores_dict.values()) / len(scores_dict)
-        else:
-            match_avg = 0
-            
-        if player_name not in player_recent_stats:
-            player_recent_stats[player_name] = {
-                "total_score": 0,
-                "matches": 0
-            }
-            
-        player_recent_stats[player_name]["total_score"] += match_avg
-        player_recent_stats[player_name]["matches"] += 1
+    if days_diff <= 30:
+        player_stats[player_name]["current_sum"] += match_avg
+        player_stats[player_name]["current_matches"] += 1
+    elif 30 < days_diff <= 60:
+        player_stats[player_name]["prev_sum"] += match_avg
+        player_stats[player_name]["prev_matches"] += 1
 
-if not player_recent_stats:
-    st.info("Nenhuma partida registrada nos ultimos 30 dias para este esporte.")
+# Monta o ranking
+leaderboard = []
+for player, stats in player_stats.items():
+    if stats["current_matches"] > 0:
+        current_avg = stats["current_sum"] / stats["current_matches"]
+        
+        # Calcula a media do mes passado para ver a evolucao
+        if stats["prev_matches"] > 0:
+            prev_avg = stats["prev_sum"] / stats["prev_matches"]
+            delta = current_avg - prev_avg
+        else:
+            delta = 0.0 # Sem dados anteriores para comparar
+            
+        # Formata a seta
+        if delta > 0:
+            evolucao = f"⬆️ +{delta:.2f}"
+        elif delta < 0:
+            evolucao = f"⬇️ {delta:.2f}"
+        else:
+            evolucao = "➖ 0.00"
+            
+        leaderboard.append({
+            "Jogador": player,
+            "Nota Media (30d)": round(current_avg, 2),
+            "Evolucao": evolucao,
+            "Dias": stats["current_matches"]
+        })
+
+if not leaderboard:
+    st.info("Nenhum jogador atuou nos ultimos 30 dias.")
     st.stop()
 
-# Montando a tabela de lideres baseada na media do periodo
-leaderboard = []
-for player, stats in player_recent_stats.items():
-    period_avg = stats["total_score"] / stats["matches"]
-    leaderboard.append({
-        "Jogador": player,
-        "Partidas (30d)": stats["matches"],
-        "Nota Media (30d)": round(period_avg, 2)
-    })
-
-# Ordenando a lista da maior nota para a menor
+# Ordena do melhor para o pior
 leaderboard_sorted = sorted(leaderboard, key=lambda x: x["Nota Media (30d)"], reverse=True)
 
 for index, item in enumerate(leaderboard_sorted):
     item["Posicao"] = index + 1
 
 df = pd.DataFrame(leaderboard_sorted)
-df = df[["Posicao", "Jogador", "Nota Media (30d)", "Partidas (30d)"]]
+df = df[["Posicao", "Jogador", "Nota Media (30d)", "Evolucao", "Dias"]]
 
-st.subheader(f"Ranking - {selected_sport_name}")
+st.markdown("---")
 st.dataframe(
     df, 
     use_container_width=True, 
     hide_index=True,
     column_config={
-        "Posicao": st.column_config.NumberColumn("Posicao", format="%d"),
-        "Nota Media (30d)": st.column_config.NumberColumn("Nota Media", format="%.2f")
+        "Posicao": st.column_config.NumberColumn("Pos", format="%d"),
+        "Nota Media (30d)": st.column_config.NumberColumn("Nota Atual", format="%.2f")
     }
 )
