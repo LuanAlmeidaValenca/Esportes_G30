@@ -32,7 +32,10 @@ selected_sport_name = st.selectbox("Selecione o Desporto para analisar", list(sp
 
 sport_info = sport_dict[selected_sport_name]
 sport_id = sport_info["id"]
-attributes_list = [attr.strip() for attr in sport_info["attributes"].split(",")]
+try:
+    attributes_list = list(json.loads(sport_info["attributes"]).keys())
+except:
+    attributes_list = [attr.strip() for attr in sport_info["attributes"].split(",") if attr.strip()]
 
 # Buscar avaliacoes especificas deste jogador e desporto
 evaluations = db.get_evaluations(sport_id=sport_id, player_id=player_id)

@@ -12,7 +12,6 @@ except KeyError:
 
 def get_connection():
     """Conecta diretamente ao banco de dados na nuvem (Remoto)."""
-    # Conecta direto na URL, ignorando arquivos locais
     conn = libsql.connect(database=TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
     return conn
 
@@ -46,17 +45,27 @@ def init_db():
             FOREIGN KEY (sport_id) REFERENCES sports (id)
         )
     ''')
-
     conn.commit()
     conn.close()
 
-# --- FUNCOES PARA JOGADORES ---
-
+# --- FUNÇÕES PARA JOGADORES ---
 def add_player(name):
     conn = get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+def update_player(player_id, new_name):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE players SET name = ? WHERE id = ?", (new_name, player_id))
         conn.commit()
         return True
     except Exception:
@@ -80,14 +89,26 @@ def delete_player(player_id):
     conn.commit()
     conn.close()
 
-# --- FUNCOES PARA ESPORTES ---
-
-def add_sport(name, attributes_list):
+# --- FUNÇÕES PARA ESPORTES ---
+def add_sport(name, attributes_dict):
     conn = get_connection()
     cursor = conn.cursor()
-    attributes_str = ",".join(attributes_list)
+    attributes_str = json.dumps(attributes_dict)
     try:
         cursor.execute("INSERT INTO sports (name, attributes) VALUES (?, ?)", (name, attributes_str))
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+def update_sport(sport_id, name, attributes_dict):
+    conn = get_connection()
+    cursor = conn.cursor()
+    attributes_str = json.dumps(attributes_dict)
+    try:
+        cursor.execute("UPDATE sports SET name = ?, attributes = ? WHERE id = ?", (name, attributes_str, sport_id))
         conn.commit()
         return True
     except Exception:
@@ -111,8 +132,7 @@ def delete_sport(sport_id):
     conn.commit()
     conn.close()
 
-# --- FUNCOES PARA AVALIACOES ---
-
+# --- FUNÇÕES PARA AVALIAÇÕES ---
 def add_evaluation(date, player_id, sport_id, scores_dict):
     conn = get_connection()
     cursor = conn.cursor()
@@ -127,7 +147,6 @@ def add_evaluation(date, player_id, sport_id, scores_dict):
 def get_evaluations(sport_id=None, player_id=None):
     conn = get_connection()
     cursor = conn.cursor()
-    
     query = """
         SELECT e.id, e.date, p.name, s.name, e.scores, e.player_id, e.sport_id
         FROM evaluations e
@@ -136,7 +155,6 @@ def get_evaluations(sport_id=None, player_id=None):
         WHERE 1=1
     """
     params = []
-    
     if sport_id:
         query += " AND e.sport_id = ?"
         params.append(sport_id)
@@ -145,7 +163,6 @@ def get_evaluations(sport_id=None, player_id=None):
         params.append(player_id)
         
     query += " ORDER BY e.date DESC"
-    
     cursor.execute(query, params)
     evaluations = cursor.fetchall()
     conn.close()

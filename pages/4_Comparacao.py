@@ -21,7 +21,10 @@ selected_sport_name = st.selectbox("1. Filtrar por Esporte", list(sport_dict.key
 
 sport_info = sport_dict[selected_sport_name]
 sport_id = sport_info["id"]
-all_attributes = [attr.strip() for attr in sport_info["attributes"].split(",")]
+try:
+    all_attributes = list(json.loads(sport_info["attributes"]).keys())
+except:
+    all_attributes = [attr.strip() for attr in sport_info["attributes"].split(",") if attr.strip()]
 
 evaluations = db.get_evaluations(sport_id=sport_id)
 if not evaluations:
