@@ -1,18 +1,31 @@
-import sqlite3
+import libsql
 import json
 import os
+import streamlit as st
+
+# O Streamlit vai ler essas variaveis da nuvem (ou do arquivo secrets.toml localmente)
+try:
+    TURSO_DB_URL = st.secrets["TURSO_DATABASE_URL"]
+    TURSO_AUTH_TOKEN = st.secrets["TURSO_AUTH_TOKEN"]
+except KeyError:
+    st.error("Credenciais do Turso nao encontradas. Configure o st.secrets!")
+    st.stop()
 
 DB_PATH = "data/database.db"
 
-def init_db():
-    """Cria o banco de dados e as tabelas se não existirem."""
+def get_connection():
+    """Conecta na replica local e puxa os dados mais recentes da nuvem."""
     if not os.path.exists("data"):
         os.makedirs("data")
         
-    conn = sqlite3.connect(DB_PATH)
+    conn = libsql.connect(DB_PATH, sync_url=TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
+    conn.sync() # Sincroniza (puxa as alteracoes feitas por outros usuarios)
+    return conn
+
+def init_db():
+    conn = get_connection()
     cursor = conn.cursor()
 
-    # Tabela de Jogadores
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +33,6 @@ def init_db():
         )
     ''')
 
-    # Tabela de Esportes (attributes será uma string separada por vírgulas, ex: "Passe,Chute,Fisico")
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +41,6 @@ def init_db():
         )
     ''')
 
-    # Tabela de Avaliações (scores será um JSON, ex: {"Passe": 8, "Chute": 7, "Fisico": 6})
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS evaluations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,24 +54,26 @@ def init_db():
     ''')
 
     conn.commit()
+    conn.sync() # Envia a criacao das tabelas para a nuvem
     conn.close()
 
-# --- FUNÇÕES PARA JOGADORES ---
+# --- FUNCOES PARA JOGADORES ---
 
 def add_player(name):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
         conn.commit()
+        conn.sync() 
         return True
-    except sqlite3.IntegrityError:
-        return False # Jogador já existe
+    except Exception:
+        return False
     finally:
         conn.close()
 
 def get_players():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name FROM players")
     players = cursor.fetchall()
@@ -68,31 +81,32 @@ def get_players():
     return players
 
 def delete_player(player_id):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM players WHERE id = ?", (player_id,))
-    # Opcional: deletar avaliações associadas a este jogador
     cursor.execute("DELETE FROM evaluations WHERE player_id = ?", (player_id,))
     conn.commit()
+    conn.sync()
     conn.close()
 
-# --- FUNÇÕES PARA ESPORTES ---
+# --- FUNCOES PARA ESPORTES ---
 
 def add_sport(name, attributes_list):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     attributes_str = ",".join(attributes_list)
     try:
         cursor.execute("INSERT INTO sports (name, attributes) VALUES (?, ?)", (name, attributes_str))
         conn.commit()
+        conn.sync()
         return True
-    except sqlite3.IntegrityError:
+    except Exception:
         return False
     finally:
         conn.close()
 
 def get_sports():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, attributes FROM sports")
     sports = cursor.fetchall()
@@ -100,17 +114,18 @@ def get_sports():
     return sports
 
 def delete_sport(sport_id):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM sports WHERE id = ?", (sport_id,))
     cursor.execute("DELETE FROM evaluations WHERE sport_id = ?", (sport_id,))
     conn.commit()
+    conn.sync()
     conn.close()
 
-# --- FUNÇÕES PARA AVALIAÇÕES ---
+# --- FUNCOES PARA AVALIACOES ---
 
 def add_evaluation(date, player_id, sport_id, scores_dict):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     scores_json = json.dumps(scores_dict)
     cursor.execute(
@@ -118,10 +133,11 @@ def add_evaluation(date, player_id, sport_id, scores_dict):
         (date, player_id, sport_id, scores_json)
     )
     conn.commit()
+    conn.sync()
     conn.close()
 
 def get_evaluations(sport_id=None, player_id=None):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     
     query = """
@@ -148,16 +164,18 @@ def get_evaluations(sport_id=None, player_id=None):
     return evaluations
 
 def update_evaluation(evaluation_id, scores_dict):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     scores_json = json.dumps(scores_dict)
     cursor.execute("UPDATE evaluations SET scores = ? WHERE id = ?", (scores_json, evaluation_id))
     conn.commit()
+    conn.sync()
     conn.close()
 
 def delete_evaluation(evaluation_id):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM evaluations WHERE id = ?", (evaluation_id,))
     conn.commit()
+    conn.sync()
     conn.close()
