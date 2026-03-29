@@ -2,7 +2,6 @@ import libsql
 import json
 import streamlit as st
 
-# O Streamlit vai ler essas variaveis da nuvem (ou do arquivo secrets.toml localmente)
 try:
     TURSO_DB_URL = st.secrets["TURSO_DATABASE_URL"]
     TURSO_AUTH_TOKEN = st.secrets["TURSO_AUTH_TOKEN"]
@@ -11,7 +10,6 @@ except KeyError:
     st.stop()
 
 def get_connection():
-    """Conecta diretamente ao banco de dados na nuvem (Remoto)."""
     conn = libsql.connect(database=TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
     return conn
 
@@ -25,6 +23,13 @@ def init_db():
             name TEXT UNIQUE NOT NULL
         )
     ''')
+    
+    # Tenta adicionar a coluna de foto caso ela ainda nao exista no seu banco
+    try:
+        cursor.execute("ALTER TABLE players ADD COLUMN photo TEXT")
+        conn.commit()
+    except Exception:
+        pass # A coluna ja existe
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sports (
@@ -48,12 +53,12 @@ def init_db():
     conn.commit()
     conn.close()
 
-# --- FUNÇÕES PARA JOGADORES ---
-def add_player(name):
+# --- FUNCOES PARA JOGADORES ---
+def add_player(name, photo=None):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
+        cursor.execute("INSERT INTO players (name, photo) VALUES (?, ?)", (name, photo))
         conn.commit()
         return True
     except Exception:
@@ -61,11 +66,11 @@ def add_player(name):
     finally:
         conn.close()
 
-def update_player(player_id, new_name):
+def update_player(player_id, new_name, photo=None):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE players SET name = ? WHERE id = ?", (new_name, player_id))
+        cursor.execute("UPDATE players SET name = ?, photo = ? WHERE id = ?", (new_name, photo, player_id))
         conn.commit()
         return True
     except Exception:
@@ -76,7 +81,7 @@ def update_player(player_id, new_name):
 def get_players():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name FROM players")
+    cursor.execute("SELECT id, name, photo FROM players")
     players = cursor.fetchall()
     conn.close()
     return players
@@ -89,7 +94,7 @@ def delete_player(player_id):
     conn.commit()
     conn.close()
 
-# --- FUNÇÕES PARA ESPORTES ---
+# --- FUNCOES PARA ESPORTES ---
 def add_sport(name, attributes_dict):
     conn = get_connection()
     cursor = conn.cursor()
@@ -132,7 +137,7 @@ def delete_sport(sport_id):
     conn.commit()
     conn.close()
 
-# --- FUNÇÕES PARA AVALIAÇÕES ---
+# --- FUNCOES PARA AVALIACOES ---
 def add_evaluation(date, player_id, sport_id, scores_dict):
     conn = get_connection()
     cursor = conn.cursor()

@@ -8,18 +8,32 @@ from utils.charts import create_radar_chart
 
 st.set_page_config(page_title="Dashboard do Jogador", layout="wide")
 
-st.title("Dashboard do Jogador")
-st.markdown("Acompanhe as suas estatisticas, a sua evolucao e faça a gestao dos seus jogos.")
-
 # Carregar jogadores
 players = db.get_players()
 if not players:
     st.warning("Nenhum jogador registado.")
     st.stop()
 
-player_dict = {p[1]: p[0] for p in players}
-selected_player_name = st.selectbox("Selecione o Jogador", list(player_dict.keys()))
-player_id = player_dict[selected_player_name]
+# 1. Atualiza o dicionario para guardar o ID e a Foto (Item 9)
+player_dict = {p[1]: {"id": p[0], "photo": p[2]} for p in players}
+selected_player_name = st.selectbox("Selecione o Jogador", list(player_dict.keys()), label_visibility="collapsed") # Revertei o Item 3 aqui para seguir o seu padrão
+
+p_info = player_dict[selected_player_name]
+player_id = p_info["id"]
+
+# 2. Cria colunas para Foto e Título Lado a Lado
+col_img, col_title = st.columns([1, 6])
+with col_img:
+    if p_info["photo"]:
+        # Exibe imagem Base64 do banco
+        st.image(f"data:image/jpeg;base64,{p_info['photo']}", width=100)
+    else:
+        # Placeholder limpo se nao houver foto
+        st.image("https://via.placeholder.com/150?text=Sem+Foto", width=100)
+with col_title:
+    # O titulo agora e dinamico com o nome do jogador
+    st.title(f"Dashboard: {selected_player_name}")
+    st.markdown("Acompanhe as suas estatisticas, a sua evolucao e faca a gestao dos seus jogos.")
 
 # Carregar desportos
 sports = db.get_sports()

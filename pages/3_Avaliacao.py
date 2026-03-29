@@ -15,7 +15,8 @@ if not players or not sports:
     st.warning("Precisa de registar pelo menos um jogador e um esporte antes de avaliar.")
     st.stop()
 
-player_dict = {p[1]: p[0] for p in players}
+# Atualiza o dicionario para guardar o ID e a Foto
+player_dict = {p[1]: {"id": p[0], "photo": p[2]} for p in players}
 sport_dict = {s[1]: {"id": s[0], "attributes": s[2]} for s in sports}
 
 col1, col2 = st.columns([1, 2])
@@ -23,8 +24,17 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.subheader("Dados da Partida")
     selected_date = st.date_input("Data do Jogo", datetime.date.today())
-    selected_player_name = st.selectbox("Jogador", list(player_dict.keys()))
-    selected_sport_name = st.selectbox("Esporte", list(sport_dict.keys()))
+    
+    selected_player_name = st.selectbox("Jogador", list(player_dict.keys()), label_visibility="collapsed")
+    
+    # Exibe a foto do jogador selecionado
+    p_info = player_dict[selected_player_name]
+    if p_info["photo"]:
+        st.image(f"data:image/jpeg;base64,{p_info['photo']}", width=100)
+    else:
+        st.info("Jogador sem foto")
+        
+    selected_sport_name = st.selectbox("Esporte", list(sport_dict.keys()), label_visibility="collapsed")
 
 with col2:
     st.subheader("Notas por Atributo")
