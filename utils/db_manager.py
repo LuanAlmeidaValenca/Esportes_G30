@@ -89,8 +89,9 @@ def get_players():
 def delete_player(player_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM players WHERE id = ?", (player_id,))
+    # Ordem corrigida: primeiro as avaliacoes, depois o jogador
     cursor.execute("DELETE FROM evaluations WHERE player_id = ?", (player_id,))
+    cursor.execute("DELETE FROM players WHERE id = ?", (player_id,))
     conn.commit()
     conn.close()
 
@@ -132,8 +133,9 @@ def get_sports():
 def delete_sport(sport_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM sports WHERE id = ?", (sport_id,))
+    # Ordem corrigida: primeiro as avaliacoes, depois o esporte
     cursor.execute("DELETE FROM evaluations WHERE sport_id = ?", (sport_id,))
+    cursor.execute("DELETE FROM sports WHERE id = ?", (sport_id,))
     conn.commit()
     conn.close()
 
