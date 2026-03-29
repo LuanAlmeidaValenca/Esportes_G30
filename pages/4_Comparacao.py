@@ -139,7 +139,14 @@ selected_viz = st.radio("Selecione a forma de exibicao:", viz_options, horizonta
 # --- RENDERIZACAO CONDICIONAL ---
 
 if selected_viz == "Tabela de Dados":
-    st.dataframe(df_plot, use_container_width=True, hide_index=True)
+    if is_single_period:
+        # Transforma a tabela: Atributos viram linhas e Jogadores viram colunas
+        df_tabela = df_plot.pivot(index="Atributo", columns="Jogador", values="Nota").reset_index()
+        df_tabela.columns.name = None # Limpa o cabecalho visual
+        st.dataframe(df_tabela, use_container_width=True, hide_index=True)
+    else:
+        # Em passagem de tempo, mantem o formato com a data visivel
+        st.dataframe(df_plot, use_container_width=True, hide_index=True)
 
 elif selected_viz == "Grafico de Barras":
     if is_single_period:
