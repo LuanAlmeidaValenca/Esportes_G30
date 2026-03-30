@@ -10,8 +10,8 @@ Todo o projeto foi desenvolvido utilizando o auxílio de geração de código ut
 
 Este repositório possui duas versões do sistema para atender a diferentes necessidades:
 
-* **[Branch `master` (Nuvem / Produção) - VOCÊ ESTÁ AQUI]**: Utiliza o **Turso (libSQL)** como banco de dados remoto e é otimizado para deploy gratuito no **Streamlit Community Cloud**. Ideal se você quer criar um link público para os seus amigos acessarem e adicionarem notas simultaneamente.
-* **[Branch `local-sqlite` (Local / Offline)]**: Utiliza o **SQLite** clássico com um arquivo de banco de dados local (`.db`). Ideal se você quer apenas clonar o projeto, estudar o código ou rodar estritamente na sua máquina sem depender de internet ou serviços de terceiros. Mude para a branch `local-sqlite` para ver as instruções específicas.
+* **[Branch `local-sqlite` (Local / Offline) - VOCÊ ESTÁ AQUI]**: Utiliza o **SQLite** clássico com um arquivo de banco de dados local (`.db`). Ideal se você quer clonar o projeto, estudar o código ou rodar estritamente na sua máquina sem depender de internet ou serviços de terceiros.
+* **[Branch `master` (Nuvem / Produção)]**: Utiliza o **Turso (libSQL)** como banco de dados remoto e é otimizado para deploy gratuito no **Streamlit Community Cloud**. Mude para a branch `master` se quiser configurar uma versão na nuvem para o seu grupo de amigos acessar via navegador.
 
 ## 🚀 Funcionalidades
 
@@ -37,28 +37,24 @@ Este projeto foi construído utilizando ferramentas modernas focadas em dados e 
 * **[Turso / libSQL](https://turso.tech/):** Banco de dados relacional (SQLite) hospedado na nuvem, garantindo que os dados não se percam a cada reinício do servidor.
 * **[Pillow (PIL)](https://python-pillow.org/):** Processamento e redimensionamento de imagens para conversão em Base64.
 
-## ☁️ Como Configurar e Fazer o Deploy (Turso + Streamlit)
+## 💻 Como Configurar e Rodar Localmente
 
-Para ter o seu próprio sistema rodando na nuvem gratuitamente para o seu grupo de amigos, siga os passos abaixo:
+A vantagem desta branch é que ela não exige nenhuma configuração de nuvem ou chaves secretas. Tudo funciona diretamente na sua máquina.
 
-### 1. Configurar o Banco de Dados (Turso)
-1. Crie uma conta gratuita no [Turso](https://turso.tech/).
-2. Crie um novo banco de dados (ex: `sports-tracker`).
-3. Copie a **URL do Banco** (formato `libsql://...`) e gere um **Auth Token**. Guarde essas duas informações.
+### 1. Clone este repositório (apontando para a branch correta)
+```bash
+git clone -b local-sqlite [https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git](https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git)
+cd NOME_DO_REPOSITORIO
+```
+### 2. Instale as dependências
+```bash
+pip install -r requirements.txt
+```
 
-### 2. Preparar o Repositório
-1. Faça um *Fork* ou copie este repositório para a sua conta do GitHub.
-2. Certifique-se de que o repositório está na branch `master`.
-
-### 3. Deploy no Streamlit Community Cloud
-1. Acesse o [Streamlit Share](https://share.streamlit.io/) e faça login com o seu GitHub.
-2. Clique em **Create app** e selecione o seu repositório recém-criado.
-3. No campo *Main file path*, certifique-se de que está apontando para `app.py` (ou `nome_do_arquivo.py`, se você o renomeou).
-4. **⚠️ O Passo Mais Importante:** Antes de clicar em Deploy, clique em **Advanced settings...** (ou vá em Secrets após o deploy) e configure as suas chaves do Turso no formato TOML:
-   ```toml
-   TURSO_DATABASE_URL = "libsql://seu-banco.turso.io"
-   TURSO_AUTH_TOKEN = "seu_token_gigante_aqui"
-5. ATENÇÃO, caso seu repositório esteja privado, é necessário dar permissão especial ao Streamlit Community para acessar repositórios privados
+### 3. Execute com
+```bash
+streamlit run app.py
+```
 
 ## 📁 Estrutura do Projeto
 
