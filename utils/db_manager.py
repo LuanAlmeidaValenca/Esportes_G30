@@ -1,16 +1,17 @@
-import libsql
+import sqlite3
 import json
+import os
 import streamlit as st
 
-try:
-    TURSO_DB_URL = st.secrets["TURSO_DATABASE_URL"]
-    TURSO_AUTH_TOKEN = st.secrets["TURSO_AUTH_TOKEN"]
-except KeyError:
-    st.error("Credenciais do Turso nao encontradas. Configure o st.secrets!")
-    st.stop()
+DB_PATH = "data/database.db"
 
 def get_connection():
-    conn = libsql.connect(database=TURSO_DB_URL, auth_token=TURSO_AUTH_TOKEN)
+    """Cria a pasta data se não existir e conecta ao banco de dados local."""
+    if not os.path.exists("data"):
+        os.makedirs("data")
+    
+    # check_same_thread=False evita erros de multithreading comuns no Streamlit
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     return conn
 
 def init_db():
@@ -20,11 +21,12 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL
+            name TEXT UNIQUE NOT NULL,
+            photo TEXT
         )
     ''')
     
-    # Tenta adicionar a coluna de foto caso ela ainda nao exista no seu banco
+    # Tenta adicionar a coluna de foto caso esteja rodando sobre um banco antigo
     try:
         cursor.execute("ALTER TABLE players ADD COLUMN photo TEXT")
         conn.commit()
@@ -89,7 +91,6 @@ def get_players():
 def delete_player(player_id):
     conn = get_connection()
     cursor = conn.cursor()
-    # Ordem corrigida: primeiro as avaliacoes, depois o jogador
     cursor.execute("DELETE FROM evaluations WHERE player_id = ?", (player_id,))
     cursor.execute("DELETE FROM players WHERE id = ?", (player_id,))
     conn.commit()
@@ -133,7 +134,6 @@ def get_sports():
 def delete_sport(sport_id):
     conn = get_connection()
     cursor = conn.cursor()
-    # Ordem corrigida: primeiro as avaliacoes, depois o esporte
     cursor.execute("DELETE FROM evaluations WHERE sport_id = ?", (sport_id,))
     cursor.execute("DELETE FROM sports WHERE id = ?", (sport_id,))
     conn.commit()
