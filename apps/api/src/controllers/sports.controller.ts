@@ -37,6 +37,35 @@ export const createSport = async (req: Request, res: Response) => {
   }
 };
 
+export const updateSport = async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  const { name, attributes } = req.body;
+  if (!name || !attributes) return res.status(400).json({ error: "Name and attributes are required" });
+
+  let attributesStr = "";
+  try {
+    attributesStr = typeof attributes === 'string' ? attributes : JSON.stringify(attributes);
+    JSON.parse(attributesStr); // Validate JSON
+  } catch (e) {
+    return res.status(400).json({ error: "Attributes must be valid JSON" });
+  }
+
+  try {
+    const result = await db.execute({
+      sql: "UPDATE sports SET name = ?, attributes = ? WHERE id = ? RETURNING *",
+      args: [name, attributesStr, id]
+    });
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Sport not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update sport" });
+  }
+};
+
 export const deleteSport = async (req: Request, res: Response) => {
   const id = String(req.params.id);
 

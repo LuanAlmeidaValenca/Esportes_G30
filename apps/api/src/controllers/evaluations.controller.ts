@@ -54,3 +54,19 @@ export const createEvaluation = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to create evaluation" });
   }
 };
+
+export const deleteEvaluation = async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+
+  try {
+    const result = await db.execute({ sql: "DELETE FROM evaluations WHERE id = ?", args: [id] });
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "Evaluation not found" });
+    }
+
+    res.json({ message: "Evaluation deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete evaluation" });
+  }
+};
