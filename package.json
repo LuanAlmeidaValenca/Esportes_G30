@@ -1,0 +1,21 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "Um sistema web interativo e dinâmico desenvolvido em Python para registrar, avaliar e analisar o desempenho esportivo de um grupo de jogadores. O aplicativo permite criar esportes personalizados, registrar notas por atributos específicos e gerar dashboards e gráficos comparativos em tempo real.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuanAlmeidaValenca/Esportes_G30.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/LuanAlmeidaValenca/Esportes_G30/issues"
+  },
+  "homepage": "https://github.com/LuanAlmeidaValenca/Esportes_G30#readme"
+}
